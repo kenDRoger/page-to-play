@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:page_to_play/screens/audiobook_player_screen.dart';
 import 'package:page_to_play/screens/conversion_flow_screen.dart';
 import 'package:page_to_play/screens/library_screen.dart';
+import 'package:page_to_play/screens/sample_importer_screen.dart';
 import 'package:page_to_play/screens/settings_screen.dart';
 import 'firebase_options.dart';
 
@@ -27,8 +28,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const LibraryScreen(),
+      home: const SampleImporterScreen(), // Temporarily set for testing
       routes: {
+        '/library': (context) => const LibraryScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/conversion': (context) => const ConversionFlowScreen(),
         '/player': (context) => const AudiobookPlayerScreen(),

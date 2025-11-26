@@ -22,3 +22,10 @@ The app simple transforms ebooks into audiobooks that the app can play.
 - Includes database for firebase
 - includes OCR/on-device text recognition from firebase
 - includes TTS service 
+
+# Models
+- includes all class files and all functions manipulating it
+
+
+### Note
+- for epubreader package, it is called epubx, so we use "import 'package:epubx/epubx.dart';"

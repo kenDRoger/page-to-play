@@ -1,9 +1,4 @@
-
 import 'package:flutter/material.dart';
-
-void main(){
-  runApp(MaterialApp(home: LibraryScreen()));
-}
 
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
