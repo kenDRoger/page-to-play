@@ -48,8 +48,7 @@ class EBook {
   }
 
   factory EBook.fromExtractedText(String title, String author, String rawText) {
-    final textProcessor = TextProcessingService();
-    final sentences = textProcessor.cleanAndStructureText(rawText);
+    final sentences = TextProcessingService.cleanAndStructureText(rawText);
     return EBook(title: title, author: author, content: sentences);
   }
 }
