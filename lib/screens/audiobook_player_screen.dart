@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:page_to_play/models/ebook.dart';
 import 'package:page_to_play/service/firebase_service.dart';
+import 'package:page_to_play/service/tts_service.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../firebase_options.dart';
@@ -29,60 +30,92 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
   List<String> _sentences = [];
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+  final TtsService _ttsService = TtsService();
+  bool _isManuallyScrolling = false;
 
   @override
   void initState() {
     super.initState();
-    // Create the future once and store it.
     _ebookFuture = FirebaseService().getEbook(widget.ebookId);
     _itemPositionsListener.itemPositions.addListener(_onScroll);
   }
 
   void _onScroll() {
-    final positions = _itemPositionsListener.itemPositions.value;
-    if (positions.isEmpty) return;
+    if (_isManuallyScrolling) {
+      if (_ttsService.isPlaying) {
+        _ttsService.pause();
+        setState(() {});
+      }
 
-    // Find the item near the top center of the viewport
-    const viewportCenter = 0.4;
-    int? centerItemIndex;
-    double minDifference = double.infinity;
+      final positions = _itemPositionsListener.itemPositions.value;
+      if (positions.isEmpty) return;
 
-    for (var position in positions) {
-      final itemCenter = (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
-      final difference = (itemCenter - viewportCenter).abs();
+      const viewportCenter = 0.4;
+      int? centerItemIndex;
+      double minDifference = double.infinity;
 
-      if (difference < minDifference) {
-        minDifference = difference;
-        centerItemIndex = position.index;
+      for (var position in positions) {
+        final itemCenter = (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
+        final difference = (itemCenter - viewportCenter).abs();
+
+        if (difference < minDifference) {
+          minDifference = difference;
+          centerItemIndex = position.index;
+        }
+      }
+
+      if (centerItemIndex != null && centerItemIndex != _currentSentenceIndex) {
+        setState(() {
+          _currentSentenceIndex = centerItemIndex!;
+        });
       }
     }
+  }
 
-    if (centerItemIndex != null && centerItemIndex != _currentSentenceIndex) {
-      setState(() {
-        _currentSentenceIndex = centerItemIndex!;
-        _onSentenceSelected();
-      });
+  void _playSequence() async {
+    if (_sentences.isEmpty) return;
+
+    // Start playing
+    setState(() {
+      _ttsService.isPlaying = true;
+    });
+
+    while (_ttsService.isPlaying && _currentSentenceIndex < _sentences.length) {
+      // Update the UI before speaking
+      setState(() {});
+      _scrollToIndex(_currentSentenceIndex, isManual: false);
+
+      await _ttsService.speak(_sentences[_currentSentenceIndex]);
+
+      if (_ttsService.isPlaying && _currentSentenceIndex < _sentences.length - 1) {
+        _currentSentenceIndex++;
+      } else {
+        // Stop playing if it was the last sentence
+        setState(() {
+          _ttsService.isPlaying = false;
+        });
+      }
     }
   }
 
-  void _onSentenceSelected() {
-    // This function is called when a new sentence is selected.
-    // You can add your logic here, for example, to trigger TTS playback.
-    print('Sentence ${_currentSentenceIndex + 1} selected.');
-  }
-
-  void _scrollToIndex(int index) {
+  void _scrollToIndex(int index, {bool isManual = true}) {
+    _isManuallyScrolling = isManual;
     _itemScrollController.scrollTo(
       index: index,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      alignment: 0.4, // Align to the near top center of the viewport
+      alignment: 0.4,
     );
+    // Reset the flag after the scroll completes
+    Future.delayed(const Duration(milliseconds: 400), () {
+      _isManuallyScrolling = false;
+    });
   }
 
   @override
   void dispose() {
     _itemPositionsListener.itemPositions.removeListener(_onScroll);
+    _ttsService.stop();
     super.dispose();
   }
 
@@ -93,7 +126,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
         title: const Text('Audiobook Player'),
       ),
       body: FutureBuilder<EBook>(
-        future: _ebookFuture, // Use the stored future
+        future: _ebookFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -106,7 +139,6 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
           }
 
           final ebook = snapshot.data!;
-          // Only assign sentences if the list is empty to avoid resetting it on rebuilds
           if (_sentences.isEmpty) {
             _sentences = ebook.content;
           }
@@ -128,9 +160,14 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.play_arrow),
+                    icon: Icon(_ttsService.isPlaying ? Icons.pause : Icons.play_arrow),
                     onPressed: () {
-                      // In a real app, this would play/pause the TTS
+                      if (_ttsService.isPlaying) {
+                        _ttsService.pause();
+                      } else {
+                        _playSequence();
+                      }
+                      setState(() {});
                     },
                   ),
                   IconButton(
@@ -158,26 +195,38 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                   builder: (BuildContext context, BoxConstraints constraints) {
                     final double verticalPadding = (constraints.maxHeight / 2.5);
 
-                    return ScrollablePositionedList.builder(
-                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
-                      itemCount: _sentences.length,
-                      itemScrollController: _itemScrollController,
-                      itemPositionsListener: _itemPositionsListener,
-                      itemBuilder: (context, index) {
-                        final isSelected = index == _currentSentenceIndex;
-                        return Container(
-                          color: isSelected ? Colors.lightBlue.withOpacity(0.3) : Colors.transparent,
-                          padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-                          child: Text(
-                            _sentences[index],
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                        );
+                    return NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (notification is ScrollStartNotification && notification.dragDetails != null) {
+                          _isManuallyScrolling = true;
+                        } else if (notification is ScrollEndNotification) {
+                          Future.delayed(const Duration(milliseconds: 200), () {
+                            _isManuallyScrolling = false;
+                          });
+                        }
+                        return false;
                       },
+                      child: ScrollablePositionedList.builder(
+                        padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                        itemCount: _sentences.length,
+                        itemScrollController: _itemScrollController,
+                        itemPositionsListener: _itemPositionsListener,
+                        itemBuilder: (context, index) {
+                          final isSelected = index == _currentSentenceIndex;
+                          return Container(
+                            color: isSelected ? Colors.lightBlue.withOpacity(0.3) : Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+                            child: Text(
+                              _sentences[index],
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
