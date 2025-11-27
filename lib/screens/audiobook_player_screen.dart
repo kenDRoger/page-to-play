@@ -124,6 +124,14 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Audiobook Player'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.pushNamed(context, '/settings');
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<EBook>(
         future: _ebookFuture,

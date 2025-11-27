@@ -3,6 +3,14 @@ import 'dart:async';
 
 import 'package:flutter_tts/flutter_tts.dart';
 
+class TtsPreferences {
+  Map<String, String>? voice;
+  String? voiceName;
+  double speechRate = 0.5;
+}
+
+final TtsPreferences ttsPreferences = TtsPreferences();
+
 class TtsService {
   final FlutterTts _flutterTts = FlutterTts();
   bool isPlaying = false;
@@ -11,7 +19,10 @@ class TtsService {
 
   TtsService() {
     _flutterTts.setLanguage("en-US");
-    _flutterTts.setSpeechRate(0.5);
+    _flutterTts.setSpeechRate(ttsPreferences.speechRate);
+    if (ttsPreferences.voice != null) {
+      _flutterTts.setVoice(ttsPreferences.voice!);
+    }
 
     _flutterTts.setCompletionHandler(() {
       if (!_speechCompleter.isCompleted) {
@@ -22,6 +33,21 @@ class TtsService {
     _flutterTts.setProgressHandler((String text, int start, int end, String word) {
       _progressHandler?.call(text, start, end, word);
     });
+  }
+
+  static Future<List<dynamic>> getVoices() async {
+    return await FlutterTts().getVoices;
+  }
+
+  static Future<void> setVoice(Map<String, String> voice) async {
+    await FlutterTts().setVoice(voice);
+    ttsPreferences.voice = voice;
+    ttsPreferences.voiceName = voice['name'];
+  }
+
+  static Future<void> setSpeechRate(double rate) async {
+    await FlutterTts().setSpeechRate(rate);
+    ttsPreferences.speechRate = rate;
   }
 
   void setProgressHandler(Function(String, int, int, String) handler) {
