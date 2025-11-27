@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(MaterialApp(home: AudiobookPlayerScreen()));
+  runApp(const MaterialApp(home: AudiobookPlayerScreen()));
 }
 
 class AudiobookPlayerScreen extends StatefulWidget {
@@ -20,15 +20,43 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
         'it will eventually wrap to the next line, demonstrating how the layout handles multiple lines of text.',
   );
   final ScrollController _scrollController = ScrollController();
+  final double _itemHeight = 80.0; // Using a fixed height for each item
 
-  void _scrollToCurrentSentence() {
-    // In a real app, you'd calculate the exact scroll position.
-    // For this example, we'll just jump to the item.
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.position.hasPixels) return;
+
+    final newIndex = (_scrollController.offset / _itemHeight).round();
+
+    if (newIndex != _currentSentenceIndex && newIndex >= 0 && newIndex < _sentences.length) {
+      setState(() {
+        _currentSentenceIndex = newIndex;
+      });
+    }
+  }
+
+  void _scrollToIndex(int index) {
+    if (!_scrollController.position.hasPixels) return;
+
+    final targetOffset = index * _itemHeight;
+
     _scrollController.animateTo(
-      _currentSentenceIndex * 60.0, // Assuming a fixed item height for simplicity
-      duration: const Duration(milliseconds: 500),
+      targetOffset.clamp(0, _scrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -49,10 +77,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                 icon: const Icon(Icons.skip_previous),
                 onPressed: () {
                   if (_currentSentenceIndex > 0) {
-                    setState(() {
-                      _currentSentenceIndex--;
-                      _scrollToCurrentSentence();
-                    });
+                    _scrollToIndex(_currentSentenceIndex - 1);
                   }
                 },
               ),
@@ -66,10 +91,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                 icon: const Icon(Icons.skip_next),
                 onPressed: () {
                   if (_currentSentenceIndex < _sentences.length - 1) {
-                    setState(() {
-                      _currentSentenceIndex++;
-                      _scrollToCurrentSentence();
-                    });
+                    _scrollToIndex(_currentSentenceIndex + 1);
                   }
                 },
               ),
@@ -80,28 +102,31 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
             onChanged: (value) {},
           ),
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: _sentences.length,
-              itemBuilder: (context, index) {
-                final isSelected = index == _currentSentenceIndex;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _currentSentenceIndex = index;
-                    });
-                  },
-                  child: Container(
-                    color: isSelected ? Colors.lightBlue.withValues(alpha:0.3) : Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-                    child: Text(
-                      _sentences[index],
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final viewportHeight = constraints.maxHeight;
+                final verticalPadding = (viewportHeight / 2) - (_itemHeight / 2);
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  itemCount: _sentences.length,
+                  itemExtent: _itemHeight, // Enforce a fixed height for each item
+                  padding: EdgeInsets.symmetric(vertical: verticalPadding > 0 ? verticalPadding : 0),
+                  itemBuilder: (context, index) {
+                    final isSelected = index == _currentSentenceIndex;
+                    return Container(
+                      color: isSelected ? Colors.lightBlue.withOpacity(0.3) : Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+                      child: Text(
+                        _sentences[index],
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 );
               },
             ),
