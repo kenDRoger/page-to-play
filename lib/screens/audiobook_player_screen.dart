@@ -30,7 +30,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
   List<String> _sentences = [];
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
-  final TtsService _ttsService = TtsService();
+  TtsService _ttsService = TtsService();
   bool _isManuallyScrolling = false;
 
   @override
@@ -50,7 +50,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       final positions = _itemPositionsListener.itemPositions.value;
       if (positions.isEmpty) return;
 
-      const viewportCenter = 0.4;
+      const viewportCenter = 0.2;
       int? centerItemIndex;
       double minDifference = double.infinity;
 
@@ -104,7 +104,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       index: index,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      alignment: 0.4,
+      alignment: 0.2,
     );
     // Reset the flag after the scroll completes
     Future.delayed(const Duration(milliseconds: 400), () {
@@ -128,7 +128,14 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.pushNamed(context, '/settings');
+              if (_ttsService.isPlaying) {
+                _ttsService.stop();
+              }
+              Navigator.pushNamed(context, '/settings').then((_) {
+                setState(() {
+                  _ttsService = TtsService();
+                });
+              });
             },
           ),
         ],
@@ -222,7 +229,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                         itemBuilder: (context, index) {
                           final isSelected = index == _currentSentenceIndex;
                           return Container(
-                            color: isSelected ? Colors.lightBlue.withOpacity(0.3) : Colors.transparent,
+                            color: isSelected ? Colors.lightBlue.withValues(alpha:0.3) : Colors.transparent,
                             padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
                             child: Text(
                               _sentences[index],

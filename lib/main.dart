@@ -36,6 +36,7 @@ class MyApp extends StatelessWidget {
         '/conversion': (context) => const ConversionFlowScreen(),
         '/settings': (context) => const SettingsScreen(),
       },
+      debugShowCheckedModeBanner: false,
     );
   }
 }
