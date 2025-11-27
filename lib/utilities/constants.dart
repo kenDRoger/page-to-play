@@ -25,3 +25,10 @@ const kTextFieldInputDecoration = InputDecoration(
     borderSide: BorderSide.none,
   ),
 );
+
+// Ebook Site Links
+final kEbookSites = {
+  'Project Gutenberg': 'https://www.gutenberg.org/',
+  'Standard Ebooks': 'https://standardebooks.org/',
+  'ManyBooks': 'https://manybooks.net/',
+};
