@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:page_to_play/service/text_processing_service.dart';
 
@@ -32,7 +33,7 @@ class EBook {
     };
   }
 
-  // Create an EBook object from a Firestore document snapshot.
+  // Create an EBook object from a Firestore document snapshot, including content.
   factory EBook.fromJson(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return EBook(
@@ -40,6 +41,22 @@ class EBook {
       title: data['title'] ?? 'Untitled',
       author: data['author'] ?? 'Unknown Author',
       content: List<String>.from(data['content'] ?? []),
+      status: EbookStatus.values.firstWhere(
+        (e) => e.toString() == data['status'],
+        orElse: () => EbookStatus.awaitingReview,
+      ),
+    );
+  }
+
+  // Create an EBook object from a Firestore document snapshot, excluding content.
+  // Only used for Library Screen as it doesn't need content
+  factory EBook.fromSnapshot(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return EBook(
+      id: doc.id,
+      title: data['title'] ?? 'Untitled',
+      author: data['author'] ?? 'Unknown Author',
+      content: [], // Content is intentionally left empty
       status: EbookStatus.values.firstWhere(
         (e) => e.toString() == data['status'],
         orElse: () => EbookStatus.awaitingReview,

@@ -1,3 +1,4 @@
+
 import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -48,5 +49,18 @@ class FirebaseService {
       log("Error adding ebook to Firebase", name: serviceName, error: e, stackTrace: s);
       rethrow;
     }
+  }
+
+  // Fetch a single ebook by its ID.
+  Future<EBook> getEbook(String id) async {
+    final doc = await _firestore.collection(_collectionPath).doc(id).get();
+    return EBook.fromJson(doc);
+  }
+
+  // Fetch all ebooks as a stream for real-time updates, without their content.
+  Stream<List<EBook>> getEbooks() {
+    return _firestore.collection(_collectionPath).snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => EBook.fromSnapshot(doc)).toList();
+    });
   }
 }

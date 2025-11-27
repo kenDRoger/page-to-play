@@ -1,31 +1,40 @@
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:page_to_play/models/ebook.dart';
+import 'package:page_to_play/service/firebase_service.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
-void main() {
-  runApp(const MaterialApp(home: AudiobookPlayerScreen()));
+import '../firebase_options.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const MaterialApp(home: AudiobookPlayerScreen(ebookId: '0Nq8qKLVKRm08L8Jhsjw')));
 }
 
 class AudiobookPlayerScreen extends StatefulWidget {
-  const AudiobookPlayerScreen({super.key});
+  final String ebookId;
+  const AudiobookPlayerScreen({super.key, required this.ebookId});
 
   @override
   State<AudiobookPlayerScreen> createState() => _AudiobookPlayerScreenState();
 }
 
 class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
+  late Future<EBook> _ebookFuture;
   int _currentSentenceIndex = 0;
-  final List<String> _sentences = List.generate(
-    50,
-    (index) => 'This is sentence number ${index + 1}. As the text gets longer, '
-        'it will eventually wrap to the next line, demonstrating how the layout handles multiple lines of text.',
-  );
+  List<String> _sentences = [];
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
 
   @override
   void initState() {
     super.initState();
+    // Create the future once and store it.
+    _ebookFuture = FirebaseService().getEbook(widget.ebookId);
     _itemPositionsListener.itemPositions.addListener(_onScroll);
   }
 
@@ -34,7 +43,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
     if (positions.isEmpty) return;
 
     // Find the item near the top center of the viewport
-    final viewportCenter = 0.4;
+    const viewportCenter = 0.4;
     int? centerItemIndex;
     double minDifference = double.infinity;
 
@@ -67,7 +76,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       index: index,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      alignment: 0.5, // Align to the center of the viewport
+      alignment: 0.4, // Align to the near top center of the viewport
     );
   }
 
@@ -83,72 +92,99 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       appBar: AppBar(
         title: const Text('Audiobook Player'),
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text('Audiobook Title'),
-          const SizedBox(height: 20),
-          Row(
+      body: FutureBuilder<EBook>(
+        future: _ebookFuture, // Use the stored future
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: Text('Ebook not found.'));
+          }
+
+          final ebook = snapshot.data!;
+          // Only assign sentences if the list is empty to avoid resetting it on rebuilds
+          if (_sentences.isEmpty) {
+            _sentences = ebook.content;
+          }
+
+          return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              IconButton(
-                icon: const Icon(Icons.skip_previous),
-                onPressed: () {
-                  if (_currentSentenceIndex > 0) {
-                    _scrollToIndex(_currentSentenceIndex - 1);
-                  }
-                },
+              Text(ebook.title, style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.skip_previous),
+                    onPressed: () {
+                      if (_currentSentenceIndex > 0) {
+                        _scrollToIndex(_currentSentenceIndex - 1);
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.play_arrow),
+                    onPressed: () {
+                      // In a real app, this would play/pause the TTS
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.skip_next),
+                    onPressed: () {
+                      if (_currentSentenceIndex < _sentences.length - 1) {
+                        _scrollToIndex(_currentSentenceIndex + 1);
+                      }
+                    },
+                  ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.play_arrow),
-                onPressed: () {
-                  // In a real app, this would play/pause the TTS
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.skip_next),
-                onPressed: () {
-                  if (_currentSentenceIndex < _sentences.length - 1) {
-                    _scrollToIndex(_currentSentenceIndex + 1);
-                  }
-                },
-              ),
-            ],
-          ),
-          Slider(
-            value: 0.5,
-            onChanged: (value) {},
-          ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final double verticalPadding = (constraints.maxHeight / 2);
+              if (_sentences.isNotEmpty)
+                Slider(
+                  value: _currentSentenceIndex.toDouble() / (_sentences.length - 1),
+                  onChanged: (double value) {
+                    final newIndex = (value * (_sentences.length - 1)).round();
+                    _scrollToIndex(newIndex);
+                  },
+                )
+              else
+                const Slider(value: 0, onChanged: null),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    final double verticalPadding = (constraints.maxHeight / 2.5);
 
-                return ScrollablePositionedList.builder(
-                  padding: EdgeInsets.symmetric(vertical: verticalPadding),
-                  itemCount: _sentences.length,
-                  itemScrollController: _itemScrollController,
-                  itemPositionsListener: _itemPositionsListener,
-                  itemBuilder: (context, index) {
-                    final isSelected = index == _currentSentenceIndex;
-                    return Container(
-                      color: isSelected ? Colors.lightBlue.withOpacity(0.3) : Colors.transparent,
-                      padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-                      child: Text(
-                        _sentences[index],
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
+                    return ScrollablePositionedList.builder(
+                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                      itemCount: _sentences.length,
+                      itemScrollController: _itemScrollController,
+                      itemPositionsListener: _itemPositionsListener,
+                      itemBuilder: (context, index) {
+                        final isSelected = index == _currentSentenceIndex;
+                        return Container(
+                          color: isSelected ? Colors.lightBlue.withOpacity(0.3) : Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+                          child: Text(
+                            _sentences[index],
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
-          ),
-        ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

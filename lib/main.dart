@@ -33,7 +33,6 @@ class MyApp extends StatelessWidget {
         '/library': (context) => const LibraryScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/conversion': (context) => const ConversionFlowScreen(),
-        '/player': (context) => const AudiobookPlayerScreen(),
       },
     );
   }
