@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 void main() {
   runApp(const MaterialApp(home: AudiobookPlayerScreen()));
@@ -19,43 +20,60 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
     (index) => 'This is sentence number ${index + 1}. As the text gets longer, '
         'it will eventually wrap to the next line, demonstrating how the layout handles multiple lines of text.',
   );
-  final ScrollController _scrollController = ScrollController();
-  final double _itemHeight = 80.0; // Using a fixed height for each item
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _itemPositionsListener.itemPositions.addListener(_onScroll);
   }
 
   void _onScroll() {
-    if (!_scrollController.position.hasPixels) return;
+    final positions = _itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
 
-    final newIndex = (_scrollController.offset / _itemHeight).round();
+    // Find the item near the top center of the viewport
+    final viewportCenter = 0.4;
+    int? centerItemIndex;
+    double minDifference = double.infinity;
 
-    if (newIndex != _currentSentenceIndex && newIndex >= 0 && newIndex < _sentences.length) {
+    for (var position in positions) {
+      final itemCenter = (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
+      final difference = (itemCenter - viewportCenter).abs();
+
+      if (difference < minDifference) {
+        minDifference = difference;
+        centerItemIndex = position.index;
+      }
+    }
+
+    if (centerItemIndex != null && centerItemIndex != _currentSentenceIndex) {
       setState(() {
-        _currentSentenceIndex = newIndex;
+        _currentSentenceIndex = centerItemIndex!;
+        _onSentenceSelected();
       });
     }
   }
 
+  void _onSentenceSelected() {
+    // This function is called when a new sentence is selected.
+    // You can add your logic here, for example, to trigger TTS playback.
+    print('Sentence ${_currentSentenceIndex + 1} selected.');
+  }
+
   void _scrollToIndex(int index) {
-    if (!_scrollController.position.hasPixels) return;
-
-    final targetOffset = index * _itemHeight;
-
-    _scrollController.animateTo(
-      targetOffset.clamp(0, _scrollController.position.maxScrollExtent),
+    _itemScrollController.scrollTo(
+      index: index,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
+      alignment: 0.5, // Align to the center of the viewport
     );
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _itemPositionsListener.itemPositions.removeListener(_onScroll);
     super.dispose();
   }
 
@@ -103,15 +121,14 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
           ),
           Expanded(
             child: LayoutBuilder(
-              builder: (context, constraints) {
-                final viewportHeight = constraints.maxHeight;
-                final verticalPadding = (viewportHeight / 2) - (_itemHeight / 2);
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double verticalPadding = (constraints.maxHeight / 2);
 
-                return ListView.builder(
-                  controller: _scrollController,
+                return ScrollablePositionedList.builder(
+                  padding: EdgeInsets.symmetric(vertical: verticalPadding),
                   itemCount: _sentences.length,
-                  itemExtent: _itemHeight, // Enforce a fixed height for each item
-                  padding: EdgeInsets.symmetric(vertical: verticalPadding > 0 ? verticalPadding : 0),
+                  itemScrollController: _itemScrollController,
+                  itemPositionsListener: _itemPositionsListener,
                   itemBuilder: (context, index) {
                     final isSelected = index == _currentSentenceIndex;
                     return Container(
