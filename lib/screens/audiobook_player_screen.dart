@@ -1,12 +1,35 @@
 
 import 'package:flutter/material.dart';
 
-void main(){
+void main() {
   runApp(MaterialApp(home: AudiobookPlayerScreen()));
 }
 
-class AudiobookPlayerScreen extends StatelessWidget {
+class AudiobookPlayerScreen extends StatefulWidget {
   const AudiobookPlayerScreen({super.key});
+
+  @override
+  State<AudiobookPlayerScreen> createState() => _AudiobookPlayerScreenState();
+}
+
+class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
+  int _currentSentenceIndex = 0;
+  final List<String> _sentences = List.generate(
+    50,
+    (index) => 'This is sentence number ${index + 1}. As the text gets longer, '
+        'it will eventually wrap to the next line, demonstrating how the layout handles multiple lines of text.',
+  );
+  final ScrollController _scrollController = ScrollController();
+
+  void _scrollToCurrentSentence() {
+    // In a real app, you'd calculate the exact scroll position.
+    // For this example, we'll just jump to the item.
+    _scrollController.animateTo(
+      _currentSentenceIndex * 60.0, // Assuming a fixed item height for simplicity
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,21 +47,64 @@ class AudiobookPlayerScreen extends StatelessWidget {
             children: [
               IconButton(
                 icon: const Icon(Icons.skip_previous),
-                onPressed: () {},
+                onPressed: () {
+                  if (_currentSentenceIndex > 0) {
+                    setState(() {
+                      _currentSentenceIndex--;
+                      _scrollToCurrentSentence();
+                    });
+                  }
+                },
               ),
               IconButton(
                 icon: const Icon(Icons.play_arrow),
-                onPressed: () {},
+                onPressed: () {
+                  // In a real app, this would play/pause the TTS
+                },
               ),
               IconButton(
                 icon: const Icon(Icons.skip_next),
-                onPressed: () {},
+                onPressed: () {
+                  if (_currentSentenceIndex < _sentences.length - 1) {
+                    setState(() {
+                      _currentSentenceIndex++;
+                      _scrollToCurrentSentence();
+                    });
+                  }
+                },
               ),
             ],
           ),
           Slider(
             value: 0.5,
             onChanged: (value) {},
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: _sentences.length,
+              itemBuilder: (context, index) {
+                final isSelected = index == _currentSentenceIndex;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _currentSentenceIndex = index;
+                    });
+                  },
+                  child: Container(
+                    color: isSelected ? Colors.lightBlue.withValues(alpha:0.3) : Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+                    child: Text(
+                      _sentences[index],
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
