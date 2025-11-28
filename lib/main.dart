@@ -59,15 +59,14 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // You can add your app logo here
-            FlutterLogo(size: 100),
-            SizedBox(height: 20),
-            Text('Page to Play', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Image(image: AssetImage('assets/icon.png')),
+            const SizedBox(height: 20),
+            const Text('Page to Play', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
