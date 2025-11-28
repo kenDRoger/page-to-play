@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 // Text Styles
@@ -15,6 +14,19 @@ const kSubheadingTextStyle = TextStyle(
 const kBodyTextStyle = TextStyle(
   fontSize: 16.0,
 );
+
+const kPlayerTitleTextStyle = TextStyle(
+  fontSize: 22.0,
+  fontWeight: FontWeight.bold,
+  color: Colors.black87,
+);
+
+const kPlayerAuthorTextStyle = TextStyle(
+  fontSize: 18.0,
+  color: Colors.black54,
+  fontStyle: FontStyle.italic,
+);
+
 
 // Input Decorations
 const kTextFieldInputDecoration = InputDecoration(

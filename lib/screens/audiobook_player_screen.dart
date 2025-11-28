@@ -1,9 +1,9 @@
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:page_to_play/models/ebook.dart';
 import 'package:page_to_play/service/firebase_service.dart';
 import 'package:page_to_play/service/tts_service.dart';
+import 'package:page_to_play/utilities/constants.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../firebase_options.dart';
@@ -50,7 +50,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       final positions = _itemPositionsListener.itemPositions.value;
       if (positions.isEmpty) return;
 
-      const viewportCenter = 0.2;
+      const viewportCenter = 0.4;
       int? centerItemIndex;
       double minDifference = double.infinity;
 
@@ -104,7 +104,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       index: index,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      alignment: 0.2,
+      alignment: 0.4,
     );
     // Reset the flag after the scroll completes
     Future.delayed(const Duration(milliseconds: 400), () {
@@ -161,7 +161,16 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(ebook.title, style: Theme.of(context).textTheme.headlineSmall),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Text(ebook.title, style: kPlayerTitleTextStyle, textAlign: TextAlign.center),
+                    const SizedBox(height: 8),
+                    Text(ebook.author, style: kPlayerAuthorTextStyle, textAlign: TextAlign.center),
+                  ],
+                ),
+              ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -170,7 +179,10 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                     icon: const Icon(Icons.skip_previous),
                     onPressed: () {
                       if (_currentSentenceIndex > 0) {
-                        _scrollToIndex(_currentSentenceIndex - 1);
+                        setState(() {
+                          _currentSentenceIndex--;
+                        });
+                        _scrollToIndex(_currentSentenceIndex, isManual: false);
                       }
                     },
                   ),
@@ -189,7 +201,10 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                     icon: const Icon(Icons.skip_next),
                     onPressed: () {
                       if (_currentSentenceIndex < _sentences.length - 1) {
-                        _scrollToIndex(_currentSentenceIndex + 1);
+                        setState(() {
+                          _currentSentenceIndex++;
+                        });
+                        _scrollToIndex(_currentSentenceIndex, isManual: false);
                       }
                     },
                   ),
@@ -200,7 +215,10 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                   value: _currentSentenceIndex.toDouble() / (_sentences.length - 1),
                   onChanged: (double value) {
                     final newIndex = (value * (_sentences.length - 1)).round();
-                    _scrollToIndex(newIndex);
+                    setState(() {
+                      _currentSentenceIndex = newIndex;
+                    });
+                    _scrollToIndex(newIndex, isManual: false);
                   },
                 )
               else

@@ -60,11 +60,11 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (isFirstTime) {
       await prefs.setBool('first_time', false);
-      Timer(const Duration(seconds: 3), () {
+      Timer(const Duration(seconds: 1), () {
         Navigator.of(context).pushReplacementNamed('/tutorial');
       });
     } else {
-      Timer(const Duration(seconds: 3), () {
+      Timer(const Duration(seconds: 1), () {
         Navigator.of(context).pushReplacementNamed('/library');
       });
     }
