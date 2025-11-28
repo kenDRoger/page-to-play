@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:page_to_play/providers/theme_provider.dart';
 import 'package:page_to_play/screens/tutorial_screen.dart';
 import 'package:page_to_play/service/tts_service.dart';
 import 'package:page_to_play/utilities/constants.dart';
+import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -40,6 +42,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -58,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSettingsGroup(
             title: 'Appearance',
             children: [
-              _buildThemeSetting(),
+              _buildThemeSetting(themeProvider),
             ],
           ),
           const SizedBox(height: 20),
@@ -79,10 +83,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Text(title.toUpperCase(), style: kSettingsHeaderTextStyle),
+          child: Text(title.toUpperCase(), style: kSettingsHeaderTextStyle.apply(color: Theme.of(context).textTheme.bodySmall?.color)),
         ),
         Container(
-          decoration: kSettingsCardDecoration,
+          decoration: kSettingsCardDecoration.copyWith(color: Theme.of(context).cardColor),
           child: Column(children: children),
         ),
       ],
@@ -97,11 +101,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         items: _voices.map((voice) {
           return DropdownMenuItem(
             value: voice['name'],
-            child: Text(voice['name'] ?? 'Unknown', style: kSettingsItemTextStyle),
+            child: Text(voice['name'] ?? 'Unknown', style: kSettingsItemTextStyle.apply(color: Theme.of(context).textTheme.bodyLarge?.color)),
           );
         }).toList(),
         onChanged: _setVoice,
-        dropdownColor: const Color(0xFF1F1F1F),
+        dropdownColor: Theme.of(context).cardColor,
         underline: Container(),
         isExpanded: true,
       ),
@@ -128,18 +132,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           Text(
             '${(ttsPreferences.speechRate * 100).toInt()}% of normal speed',
-            style: kSettingsSubItemTextStyle,
+            style: kSettingsSubItemTextStyle.apply(color: Theme.of(context).textTheme.bodySmall?.color),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildThemeSetting() {
+  Widget _buildThemeSetting(ThemeProvider themeProvider) {
     return _buildSettingsItem(
       title: 'Theme',
-      trailing: const Text('System Default', style: kSettingsSubItemTextStyle),
-      onTap: () {},
+      trailing: DropdownButton<ThemeModeOption>(
+        value: themeProvider.themeModeOption,
+        items: const [
+          DropdownMenuItem(
+            value: ThemeModeOption.light,
+            child: Text('Light'),
+          ),
+          DropdownMenuItem(
+            value: ThemeModeOption.dark,
+            child: Text('Dark'),
+          ),
+          DropdownMenuItem(
+            value: ThemeModeOption.system,
+            child: Text('System Default'),
+          ),
+        ],
+        onChanged: (ThemeModeOption? newValue) {
+          if (newValue != null) {
+            themeProvider.setTheme(newValue);
+          }
+        },
+        dropdownColor: Theme.of(context).cardColor,
+        underline: Container(),
+      ),
     );
   }
 
@@ -155,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSettingsItem(
       {required String title, Widget? child, Widget? trailing, VoidCallback? onTap}) {
     return ListTile(
-      title: Text(title, style: kSettingsItemTextStyle),
+      title: Text(title, style: kSettingsItemTextStyle.apply(color: Theme.of(context).textTheme.bodyLarge?.color)),
       subtitle: child,
       trailing: trailing,
       onTap: onTap,

@@ -41,8 +41,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
               decoration: kTextFieldInputDecoration.copyWith(
                 hintText: 'Search by title or author',
                 prefixIcon: const Icon(Icons.search),
+                fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
               ),
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
             ),
           ),
           Expanded(
@@ -54,12 +56,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 }
                 if (snapshot.hasError) {
                   return Center(
-                      child: Text('Error: ${snapshot.error}', style: kBodyTextStyle));
+                      child: Text('Error: ${snapshot.error}', style: kBodyTextStyle.apply(color: Theme.of(context).textTheme.bodyMedium?.color)));
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
+                  return Center(
                       child: Text('No ebooks found. Add one to get started!',
-                          style: kBodyTextStyle));
+                          style: kBodyTextStyle.apply(color: Theme.of(context).textTheme.bodyMedium?.color)));
                 }
 
                 final allEbooks = snapshot.data!;
@@ -73,9 +75,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       }).toList();
 
                 if (filteredEbooks.isEmpty) {
-                  return const Center(
+                  return Center(
                       child: Text('No ebooks match your search.',
-                          style: kBodyTextStyle));
+                          style: kBodyTextStyle.apply(color: Theme.of(context).textTheme.bodyMedium?.color)));
                 }
 
                 return ListView.builder(
@@ -86,20 +88,20 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       elevation: 4,
                       margin: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
-                      color: const Color(0xFF1F1F1F),
+                      color: Theme.of(context).cardColor,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 10),
                         title: Text(ebook.title,
-                            style: kSubheadingTextStyle.copyWith(
+                            style: kSubheadingTextStyle.apply(color: Theme.of(context).textTheme.titleLarge?.color).copyWith(
                                 fontWeight: FontWeight.bold)),
                         subtitle: Text(ebook.author,
-                            style: kBodyTextStyle.copyWith(color: Colors.white54)),
+                            style: kBodyTextStyle.apply(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7))),
                         trailing: Text(
                           ebook.status.displayName,
-                          style: kBodyTextStyle.copyWith(
+                          style: kBodyTextStyle.apply(
                               color: ebook.status == EbookStatus.processing
                                   ? Colors.orangeAccent
                                   : ebook.status == EbookStatus.done

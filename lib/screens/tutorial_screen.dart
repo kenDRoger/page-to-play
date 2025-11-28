@@ -124,13 +124,13 @@ class TutorialPage extends StatelessWidget {
           const SizedBox(height: 40),
           Text(
             imageData!['title']!,
-            style: kTutorialTitleTextStyle,
+            style: kTutorialTitleTextStyle.copyWith(color: Colors.white),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
           Text(
             imageData!['content']!,
-            style: kTutorialContentTextStyle,
+            style: kTutorialContentTextStyle.copyWith(color: Colors.white70),
             textAlign: TextAlign.center,
           ),
         ],

@@ -44,8 +44,8 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
   void _showError(String message) {
     if (!mounted) return;
     final snackBar = SnackBar(
-      content: Text(message, style: const TextStyle(color: Colors.white)),
-      backgroundColor: Colors.redAccent,
+      content: Text(message, style: TextStyle(color: Theme.of(context).colorScheme.onError)),
+      backgroundColor: Theme.of(context).colorScheme.error,
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
@@ -173,6 +173,7 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
   }
 
   Widget _buildInitialView() {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -198,11 +199,11 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
                 ),
               ),
             const SizedBox(height: 60),
-            const Text("Don't have an ebook?",
-                textAlign: TextAlign.center, style: kSubheadingTextStyle),
+            Text("Don't have an ebook?",
+                textAlign: TextAlign.center, style: kSubheadingTextStyle.apply(color: theme.textTheme.titleLarge?.color)),
             const SizedBox(height: 10),
-            const Text("Download one from these sites:",
-                textAlign: TextAlign.center, style: kBodyTextStyle),
+            Text("Download one from these sites:",
+                textAlign: TextAlign.center, style: kBodyTextStyle.apply(color: theme.textTheme.bodyMedium?.color)),
             const SizedBox(height: 20),
             ...kEbookSites.entries.map((entry) {
               return TextButton(
@@ -217,6 +218,7 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
   }
 
   Widget _buildEditView() {
+    final theme = Theme.of(context);
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -225,16 +227,26 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
             delegate: SliverChildListDelegate([
               TextField(
                 controller: _titleController,
-                decoration: kTextFieldInputDecoration.copyWith(labelText: 'Title'),
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+                decoration: kTextFieldInputDecoration.copyWith(
+                  labelText: 'Title',
+                  fillColor: theme.inputDecorationTheme.fillColor,
+                  labelStyle: TextStyle(color: theme.inputDecorationTheme.hintStyle?.color),
+                ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _authorController,
-                decoration: kTextFieldInputDecoration.copyWith(labelText: 'Author'),
+                 style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+                decoration: kTextFieldInputDecoration.copyWith(
+                  labelText: 'Author',
+                  fillColor: theme.inputDecorationTheme.fillColor,
+                  labelStyle: TextStyle(color: theme.inputDecorationTheme.hintStyle?.color),
+                ),
               ),
               const SizedBox(height: 24),
-              const Text('Content Preview:',
-                  style: kSubheadingTextStyle),
+              Text('Content Preview:',
+                  style: kSubheadingTextStyle.apply(color: theme.textTheme.titleLarge?.color)),
             ]),
           ),
         ),
@@ -246,8 +258,11 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
                 child: TextField(
                   controller: _contentControllers[index],
                   maxLines: null,
+                   style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                   decoration: kTextFieldInputDecoration.copyWith(
                     labelText: 'Sentence ${index + 1}',
+                    fillColor: theme.inputDecorationTheme.fillColor,
+                    labelStyle: TextStyle(color: theme.inputDecorationTheme.hintStyle?.color),
                   ),
                 ),
               );

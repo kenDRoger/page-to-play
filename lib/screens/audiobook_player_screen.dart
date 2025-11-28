@@ -106,6 +106,8 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Audiobook Player'),
@@ -179,8 +181,8 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                               _sentences[index],
                               textAlign: TextAlign.center,
                               style: isSelected
-                                  ? kPlayerContentSelectedTextStyle
-                                  : kPlayerContentTextStyle,
+                                  ? kPlayerContentSelectedTextStyle.apply(color: theme.textTheme.bodyLarge?.color)
+                                  : kPlayerContentTextStyle.apply(color: theme.textTheme.bodyMedium?.color),
                             ),
                           );
                         },
@@ -189,7 +191,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                   },
                 ),
               ),
-              _buildPlayerControls(ebook),
+              _buildPlayerControls(ebook, theme),
             ],
           );
         },
@@ -197,11 +199,11 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
     );
   }
 
-  Widget _buildPlayerControls(EBook ebook) {
+  Widget _buildPlayerControls(EBook ebook, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F1F1F),
+        color: theme.cardColor,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -217,9 +219,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(ebook.title, style: kPlayerTitleTextStyle, textAlign: TextAlign.center),
+          Text(ebook.title, style: kPlayerTitleTextStyle.apply(color: theme.textTheme.titleLarge?.color), textAlign: TextAlign.center),
           const SizedBox(height: 4),
-          Text(ebook.author, style: kPlayerAuthorTextStyle, textAlign: TextAlign.center),
+          Text(ebook.author, style: kPlayerAuthorTextStyle.apply(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)), textAlign: TextAlign.center),
           const SizedBox(height: 10),
           Slider(
             value: _sentences.isNotEmpty
