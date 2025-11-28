@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:page_to_play/screens/tutorial_screen.dart';
 import 'package:page_to_play/service/tts_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -78,6 +78,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Theme'),
             subtitle: const Text('System Default'),
             onTap: () {},
+          ),
+          ListTile(
+            title: const Text('How to Use'),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const TutorialScreen()));
+            },
           ),
         ],
       ),

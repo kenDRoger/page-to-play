@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -7,14 +6,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:page_to_play/screens/conversion_flow_screen.dart';
 import 'package:page_to_play/screens/library_screen.dart';
 import 'package:page_to_play/screens/settings_screen.dart';
+import 'package:page_to_play/screens/tutorial_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -35,6 +33,7 @@ class MyApp extends StatelessWidget {
         '/library': (context) => const LibraryScreen(),
         '/conversion': (context) => const ConversionFlowScreen(),
         '/settings': (context) => const SettingsScreen(),
+        '/tutorial': (context) => const TutorialScreen(),
       },
       debugShowCheckedModeBanner: false,
     );
@@ -52,9 +51,23 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacementNamed('/library');
-    });
+    _checkFirstTime();
+  }
+
+  Future<void> _checkFirstTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstTime = prefs.getBool('first_time') ?? true;
+
+    if (isFirstTime) {
+      await prefs.setBool('first_time', false);
+      Timer(const Duration(seconds: 3), () {
+        Navigator.of(context).pushReplacementNamed('/tutorial');
+      });
+    } else {
+      Timer(const Duration(seconds: 3), () {
+        Navigator.of(context).pushReplacementNamed('/library');
+      });
+    }
   }
 
   @override
@@ -64,9 +77,17 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image(image: AssetImage('assets/icon.png')),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.1,
+              ),
+              child: const Image(image: AssetImage('assets/icon.png')),
+            ),
             const SizedBox(height: 20),
-            const Text('Page to Play', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const Text(
+              'Page to Play',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ),
