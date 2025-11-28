@@ -84,6 +84,12 @@ final kAppTheme = ThemeData(
       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
     ),
   ),
+  sliderTheme: SliderThemeData(
+    activeTrackColor: const Color(0xFF2575FC),
+    inactiveTrackColor: Colors.white.withOpacity(0.2),
+    thumbColor: Colors.white,
+    overlayColor: const Color(0xFF2575FC).withOpacity(0.2),
+  ),
 );
 
 // Input Decorations
@@ -116,3 +122,25 @@ const kTutorialContentTextStyle = TextStyle(
   color: Colors.white70,
   height: 1.5,
 );
+
+// Audiobook Player Screen
+const kPlayerContentTextStyle = TextStyle(
+  fontSize: 18.0,
+  color: Colors.white70,
+  height: 1.6,
+);
+
+const kPlayerContentSelectedTextStyle = TextStyle(
+  fontSize: 20.0,
+  fontWeight: FontWeight.bold,
+  color: Colors.white,
+  height: 1.6,
+);
+
+final kPlayerSelectedSentenceDecoration = BoxDecoration(
+  color: const Color(0xFF2575FC).withOpacity(0.2),
+  borderRadius: BorderRadius.circular(8.0),
+);
+
+const kPlayerControlIconSize = 32.0;
+const kPlayerMainControlIconSize = 48.0;

@@ -108,20 +108,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
                               fontStyle: FontStyle.italic),
                         ),
                         onTap: () {
-                          if (ebook.id != null &&
-                              ebook.status == EbookStatus.done) {
+                          if (ebook.id != null) {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
                                     AudiobookPlayerScreen(ebookId: ebook.id!),
                               ),
-                            );
-                          } else if (ebook.status != EbookStatus.done) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content:
-                                      Text('Ebook is not ready to play yet.')),
                             );
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
