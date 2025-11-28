@@ -103,3 +103,16 @@ final kEbookSites = {
   'Standard Ebooks': 'https://standardebooks.org/',
   'ManyBooks': 'https://manybooks.net/',
 };
+
+// Tutorial Screen
+const kTutorialTitleTextStyle = TextStyle(
+  fontSize: 26.0,
+  fontWeight: FontWeight.bold,
+  color: Colors.white,
+);
+
+const kTutorialContentTextStyle = TextStyle(
+  fontSize: 16.0,
+  color: Colors.white70,
+  height: 1.5,
+);
