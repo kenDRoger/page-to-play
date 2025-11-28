@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
 
+// App Color Palette
+const kDeepIndigo = Color(0xFF2C466A);
+const kVibrantAmber = Color(0xFFE87D38);
+const kCreamPaper = Color(0xFFF6F0E0);
+const kDarkSlate = Color(0xFF4A4A4A);
+const kGildedGold = Color(0xFFC7A868);
+const kDarkIndigo = Color(0xFF1A283C);
+
+
 // Text Styles
 const kHeadingTextStyle = TextStyle(
   fontSize: 24.0,
@@ -29,7 +38,7 @@ const kPlayerAuthorTextStyle = TextStyle(
 const kSplashTitleTextStyle = TextStyle(
   fontSize: 36.0,
   fontWeight: FontWeight.bold,
-  color: Colors.white,
+  color: kCreamPaper,
 );
 
 const kSplashScreenDecoration = BoxDecoration(
@@ -37,8 +46,8 @@ const kSplashScreenDecoration = BoxDecoration(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF6A11CB),
-      Color(0xFF2575FC),
+      kDeepIndigo,
+      kVibrantAmber,
     ],
   ),
 );
@@ -46,95 +55,110 @@ const kSplashScreenDecoration = BoxDecoration(
 // App Theme
 final kDarkTheme = ThemeData(
   brightness: Brightness.dark,
-  primaryColor: const Color(0xFF6A11CB),
+  primaryColor: kDeepIndigo,
   colorScheme: ColorScheme.fromSeed(
-    seedColor: const Color(0xFF6A11CB),
+    seedColor: kDeepIndigo,
     brightness: Brightness.dark,
-    secondary: const Color(0xFF2575FC),
+    secondary: kVibrantAmber,
+    error: Colors.redAccent,
+    onError: kCreamPaper,
   ),
-  scaffoldBackgroundColor: const Color(0xFF121212),
+  scaffoldBackgroundColor: kDarkIndigo,
   appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xFF1F1F1F),
+    backgroundColor: kDeepIndigo,
     elevation: 0,
     titleTextStyle: TextStyle(
-      color: Colors.white,
+      color: kCreamPaper,
       fontSize: 20,
       fontWeight: FontWeight.bold,
     ),
-    iconTheme: IconThemeData(color: Colors.white),
+    iconTheme: IconThemeData(color: kCreamPaper),
   ),
-  textTheme: const TextTheme(
-    displayLarge: kHeadingTextStyle,
-    titleLarge: kSubheadingTextStyle,
-    bodyMedium: kBodyTextStyle,
-    labelLarge: TextStyle(color: Colors.white),
+  textTheme: TextTheme(
+    displayLarge: kHeadingTextStyle.copyWith(color: kCreamPaper),
+    titleLarge: kSubheadingTextStyle.copyWith(color: kCreamPaper),
+    bodyMedium: kBodyTextStyle.copyWith(color: kCreamPaper),
+    bodySmall: kBodyTextStyle.copyWith(color: kCreamPaper, fontSize: 14.0),
+    labelLarge: const TextStyle(color: kCreamPaper),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       foregroundColor: Colors.white,
-      backgroundColor: const Color(0xFF6A11CB),
+      backgroundColor: kVibrantAmber,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
     ),
   ),
-  sliderTheme: SliderThemeData(
-    activeTrackColor: const Color(0xFF2575FC),
-    inactiveTrackColor: Colors.white.withOpacity(0.2),
-    thumbColor: Colors.white,
-    overlayColor: const Color(0xFF2575FC).withOpacity(0.2),
+  sliderTheme: const SliderThemeData(
+    activeTrackColor: kVibrantAmber,
+    inactiveTrackColor: kCreamPaper,
+    thumbColor: kVibrantAmber,
+    overlayColor: kVibrantAmber,
   ),
+  inputDecorationTheme: const InputDecorationTheme(
+    fillColor: kDeepIndigo,
+    hintStyle: TextStyle(color: kCreamPaper),
+  ),
+  cardColor: kDeepIndigo,
 );
 
 final kLightTheme = ThemeData(
   brightness: Brightness.light,
-  primaryColor: const Color(0xFF6A11CB),
+  primaryColor: kDeepIndigo,
   colorScheme: ColorScheme.fromSeed(
-    seedColor: const Color(0xFF6A11CB),
+    seedColor: kDeepIndigo,
     brightness: Brightness.light,
-    secondary: const Color(0xFF2575FC),
+    secondary: kVibrantAmber,
+    error: Colors.red.shade800,
+    onError: kCreamPaper,
   ),
-  scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+  scaffoldBackgroundColor: kCreamPaper,
   appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xFFFFFFFF),
+    backgroundColor: kDeepIndigo,
     elevation: 0,
     titleTextStyle: TextStyle(
-      color: Colors.black,
+      color: kCreamPaper,
       fontSize: 20,
       fontWeight: FontWeight.bold,
     ),
-    iconTheme: IconThemeData(color: Colors.black),
+    iconTheme: IconThemeData(color: kCreamPaper),
   ),
-  textTheme: const TextTheme(
-    displayLarge: kHeadingTextStyle,
-    titleLarge: kSubheadingTextStyle,
-    bodyMedium: kBodyTextStyle,
-    labelLarge: TextStyle(color: Colors.black),
+  textTheme: TextTheme(
+    displayLarge: kHeadingTextStyle.copyWith(color: kDarkSlate),
+    titleLarge: kSubheadingTextStyle.copyWith(color: kDarkSlate),
+    bodyMedium: kBodyTextStyle.copyWith(color: kDarkSlate),
+    bodySmall: kBodyTextStyle.copyWith(color: kDarkSlate, fontSize: 14.0),
+    labelLarge: const TextStyle(color: kDarkSlate),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       foregroundColor: Colors.white,
-      backgroundColor: const Color(0xFF6A11CB),
+      backgroundColor: kVibrantAmber,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
     ),
   ),
-  sliderTheme: SliderThemeData(
-    activeTrackColor: const Color(0xFF2575FC),
-    inactiveTrackColor: Colors.black.withOpacity(0.1),
-    thumbColor: const Color(0xFF6A11CB),
-    overlayColor: const Color(0xFF2575FC).withOpacity(0.2),
+  sliderTheme: const SliderThemeData(
+    activeTrackColor: kVibrantAmber,
+    inactiveTrackColor: kDarkSlate,
+    thumbColor: kDeepIndigo,
+    overlayColor: kVibrantAmber,
   ),
+  inputDecorationTheme: const InputDecorationTheme(
+    fillColor: Colors.white,
+    hintStyle: TextStyle(color: kDarkSlate),
+  ),
+  cardColor: Colors.white,
 );
 
 
 // Input Decorations
 const kTextFieldInputDecoration = InputDecoration(
   filled: true,
-  hintStyle: TextStyle(color: Colors.grey),
   border: OutlineInputBorder(
     borderRadius: BorderRadius.all(Radius.circular(10.0)),
     borderSide: BorderSide.none,
@@ -172,7 +196,7 @@ const kPlayerContentSelectedTextStyle = TextStyle(
 );
 
 final kPlayerSelectedSentenceDecoration = BoxDecoration(
-  color: const Color(0xFF2575FC).withOpacity(0.2),
+  color: kVibrantAmber.withOpacity(0.2),
   borderRadius: BorderRadius.circular(8.0),
 );
 
@@ -200,6 +224,6 @@ const kSettingsSubItemTextStyle = TextStyle(
 
 // Conversion Flow Screen
 const kSuccessTextStyle = TextStyle(
-  color: Colors.greenAccent,
+  color: Colors.green,
   fontSize: 16.0,
 );
