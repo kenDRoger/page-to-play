@@ -1,11 +1,23 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:page_to_play/service/text_processing_service.dart';
 
 enum EbookStatus {
   awaitingReview,
-  readyToPlay,
-  processing,
+  done,
+  processing;
+
+  String get displayName {
+    switch (this) {
+      case EbookStatus.awaitingReview:
+        return 'Awaiting Review';
+      case EbookStatus.done:
+        return 'Ready to Play';
+      case EbookStatus.processing:
+        return 'Processing';
+      default:
+        return '';
+    }
+  }
 }
 
 class EBook {

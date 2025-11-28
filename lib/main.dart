@@ -7,6 +7,7 @@ import 'package:page_to_play/screens/conversion_flow_screen.dart';
 import 'package:page_to_play/screens/library_screen.dart';
 import 'package:page_to_play/screens/settings_screen.dart';
 import 'package:page_to_play/screens/tutorial_screen.dart';
+import 'package:page_to_play/utilities/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 
@@ -24,9 +25,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Page to Play',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
+      theme: kAppTheme,
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
@@ -73,22 +72,25 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: MediaQuery.of(context).size.width * 0.1,
+      body: Container(
+        decoration: kSplashScreenDecoration,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: MediaQuery.of(context).size.width * 0.1,
+                ),
+                child: const Image(image: AssetImage('assets/icon.png')),
               ),
-              child: const Image(image: AssetImage('assets/icon.png')),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Page to Play',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-          ],
+              const SizedBox(height: 20),
+              const Text(
+                'Page to Play',
+                style: kSplashTitleTextStyle,
+              ),
+            ],
+          ),
         ),
       ),
     );

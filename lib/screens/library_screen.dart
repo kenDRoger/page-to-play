@@ -1,18 +1,8 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:page_to_play/models/ebook.dart';
 import 'package:page_to_play/screens/audiobook_player_screen.dart';
 import 'package:page_to_play/service/firebase_service.dart';
-
-import '../firebase_options.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  runApp(const MaterialApp(home: LibraryScreen()));
-}
+import 'package:page_to_play/utilities/constants.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -28,7 +18,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Page To Play Library'),
+        title: const Text('Library'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -41,20 +31,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(16.0),
             child: TextField(
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
                 });
               },
-              decoration: InputDecoration(
-                labelText: 'Search by title or author',
+              decoration: kTextFieldInputDecoration.copyWith(
+                hintText: 'Search by title or author',
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                ),
               ),
+              style: const TextStyle(color: Colors.white),
             ),
           ),
           Expanded(
@@ -65,10 +53,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(
+                      child: Text('Error: ${snapshot.error}', style: kBodyTextStyle));
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('No ebooks found.'));
+                  return const Center(
+                      child: Text('No ebooks found. Add one to get started!',
+                          style: kBodyTextStyle));
                 }
 
                 final allEbooks = snapshot.data!;
@@ -82,35 +73,64 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       }).toList();
 
                 if (filteredEbooks.isEmpty) {
-                  return const Center(child: Text('No ebooks match your search.'));
+                  return const Center(
+                      child: Text('No ebooks match your search.',
+                          style: kBodyTextStyle));
                 }
 
                 return ListView.builder(
                   itemCount: filteredEbooks.length,
-                  addAutomaticKeepAlives: false,
                   itemBuilder: (context, index) {
                     final ebook = filteredEbooks[index];
-                    return ListTile(
-                      title: Text(ebook.title),
-                      subtitle: Text(ebook.author),
-                      trailing: Text(ebook.status.toString().split('.').last),
-                      onTap: () {
-                        if (ebook.id != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  AudiobookPlayerScreen(ebookId: ebook.id!),
-                            ),
-                          );
-                        } else {
-                          // Handle the case where the ebook ID is null
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Error: Ebook ID is missing.')),
-                          );
-                        }
-                      },
+                    return Card(
+                      elevation: 4,
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      color: const Color(0xFF1F1F1F),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 10),
+                        title: Text(ebook.title,
+                            style: kSubheadingTextStyle.copyWith(
+                                fontWeight: FontWeight.bold)),
+                        subtitle: Text(ebook.author,
+                            style: kBodyTextStyle.copyWith(color: Colors.white54)),
+                        trailing: Text(
+                          ebook.status.displayName,
+                          style: kBodyTextStyle.copyWith(
+                              color: ebook.status == EbookStatus.processing
+                                  ? Colors.orangeAccent
+                                  : ebook.status == EbookStatus.done
+                                      ? Colors.greenAccent
+                                      : Colors.grey,
+                              fontStyle: FontStyle.italic),
+                        ),
+                        onTap: () {
+                          if (ebook.id != null &&
+                              ebook.status == EbookStatus.done) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    AudiobookPlayerScreen(ebookId: ebook.id!),
+                              ),
+                            );
+                          } else if (ebook.status != EbookStatus.done) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content:
+                                      Text('Ebook is not ready to play yet.')),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Error: Ebook ID is missing.')),
+                            );
+                          }
+                        },
+                      ),
                     );
                   },
                 );
