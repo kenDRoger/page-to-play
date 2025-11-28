@@ -167,3 +167,9 @@ const kSettingsSubItemTextStyle = TextStyle(
   fontSize: 14.0,
   color: Colors.white54,
 );
+
+// Conversion Flow Screen
+const kSuccessTextStyle = TextStyle(
+  color: Colors.greenAccent,
+  fontSize: 16.0,
+);

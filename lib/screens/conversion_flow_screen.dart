@@ -1,19 +1,9 @@
-
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:page_to_play/models/ebook.dart';
 import 'package:page_to_play/service/ebook_importer_service.dart';
 import 'package:page_to_play/service/firebase_service.dart';
 import 'package:page_to_play/utilities/constants.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../firebase_options.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const MaterialApp(home: ConversionFlowScreen()));
-}
 
 class ConversionFlowScreen extends StatefulWidget {
   const ConversionFlowScreen({super.key});
@@ -31,14 +21,12 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
   String? _error;
   String? _status;
 
-  // Controllers for editable fields
   late TextEditingController _titleController;
   late TextEditingController _authorController;
   late List<TextEditingController> _contentControllers;
 
   @override
   void dispose() {
-    // Only dispose controllers if they have been initialized.
     if (_ebook != null) {
       _disposeControllers();
     }
@@ -55,17 +43,11 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    setState(() {
-      _error = message;
-    });
-    // Clear the error message after 5 seconds.
-    Future.delayed(const Duration(seconds: 5), () {
-      if (mounted && _error == message) {
-        setState(() {
-          _error = null;
-        });
-      }
-    });
+    final snackBar = SnackBar(
+      content: Text(message, style: const TextStyle(color: Colors.white)),
+      backgroundColor: Colors.redAccent,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   Future<void> _launchURL(String url) async {
@@ -116,13 +98,10 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
 
     setState(() {
       _isLoading = true;
-      _error = null;
-      _status = null;
     });
 
     try {
       await _firebaseService.addEbook(editedEbook);
-      // Dispose controllers before resetting the state.
       _disposeControllers();
       setState(() {
         _status = "Ebook saved to Firebase successfully!";
@@ -140,7 +119,6 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
   }
 
   void _reset() {
-    // Dispose controllers before clearing the ebook object.
     if (_ebook != null) {
       _disposeControllers();
     }
@@ -151,111 +129,35 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
     });
   }
 
-  Widget _buildInitialView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            onPressed: _pickFile,
-            child: const Text('Import Ebook (PDF or EPUB)'),
-          ),
-          if (_status != null)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                _status!,
-                style: const TextStyle(color: Colors.green, fontSize: 16),
-              ),
-            ),
-          const SizedBox(height: 40),
-          const Text("Don't have an ebook?", style: kSubheadingTextStyle),
-          const Text("Download one from these sites:"),
-          const SizedBox(height: 10),
-          ...kEbookSites.entries.map((entry) {
-            return TextButton(
-              onPressed: () => _launchURL(entry.value),
-              child: Text(entry.key),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEditView() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          TextFormField(
-            controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'Title',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _authorController,
-            decoration: const InputDecoration(
-              labelText: 'Author',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Content Preview:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _contentControllers.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: TextFormField(
-                    controller: _contentControllers[index],
-                    maxLines: null, // Allows for multi-line sentences
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      labelText: 'Sentence ${index + 1}',
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              TextButton(onPressed: _reset, child: const Text('Discard')),
-              ElevatedButton(
-                onPressed: _saveToFirebase,
-                child: const Text('Save to Library'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // If the edit view is showing, pressing back will reset the state.
         if (_ebook != null) {
           _reset();
-          return false; // Prevent the default back navigation.
+          return false;
         }
-        // Otherwise, allow the default back navigation.
         return true;
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Add New Ebook')),
+        appBar: AppBar(
+          title: Text(_ebook == null ? 'Add New Ebook' : 'Review Ebook'),
+          actions: _ebook != null
+              ? [
+                  TextButton(
+                    onPressed: _reset,
+                    child: const Text('Discard'),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: ElevatedButton(
+                      onPressed: _saveToFirebase,
+                      child: const Text('Save'),
+                    ),
+                  ),
+                ]
+              : null,
+        ),
         body: Stack(
           children: [
             if (_ebook == null) _buildInitialView() else _buildEditView(),
@@ -264,26 +166,96 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
                 color: Colors.black.withOpacity(0.5),
                 child: const Center(child: CircularProgressIndicator()),
               ),
-            if (_error != null)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Material(
-                  color: Colors.red,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      _error!,
-                      style: const TextStyle(color: Colors.white),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildInitialView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton.icon(
+              icon: const Icon(Icons.cloud_upload_outlined),
+              onPressed: _pickFile,
+              label: const Text('Import Ebook (PDF or EPUB)'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+              ),
+            ),
+            if (_status != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 20.0),
+                child: Text(
+                  _status!,
+                  textAlign: TextAlign.center,
+                  style: kSuccessTextStyle,
+                ),
+              ),
+            const SizedBox(height: 60),
+            const Text("Don't have an ebook?",
+                textAlign: TextAlign.center, style: kSubheadingTextStyle),
+            const SizedBox(height: 10),
+            const Text("Download one from these sites:",
+                textAlign: TextAlign.center, style: kBodyTextStyle),
+            const SizedBox(height: 20),
+            ...kEbookSites.entries.map((entry) {
+              return TextButton(
+                onPressed: () => _launchURL(entry.value),
+                child: Text(entry.key, style: const TextStyle(fontSize: 16)),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditView() {
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16.0),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              TextField(
+                controller: _titleController,
+                decoration: kTextFieldInputDecoration.copyWith(labelText: 'Title'),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _authorController,
+                decoration: kTextFieldInputDecoration.copyWith(labelText: 'Author'),
+              ),
+              const SizedBox(height: 24),
+              const Text('Content Preview:',
+                  style: kSubheadingTextStyle),
+            ]),
+          ),
+        ),
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: TextField(
+                  controller: _contentControllers[index],
+                  maxLines: null,
+                  decoration: kTextFieldInputDecoration.copyWith(
+                    labelText: 'Sentence ${index + 1}',
+                  ),
+                ),
+              );
+            },
+            childCount: _contentControllers.length,
+          ),
+        ),
+      ],
     );
   }
 }
