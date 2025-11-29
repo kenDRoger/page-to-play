@@ -129,9 +129,25 @@ class TutorialPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            imageData!['image']!,
-            height: MediaQuery.of(context).size.height * 0.4,
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  spreadRadius: 2,
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                imageData!['image']!,
+                height: MediaQuery.of(context).size.height * 0.4,
+              ),
+            ),
           ),
           const SizedBox(height: 40),
           Text(
