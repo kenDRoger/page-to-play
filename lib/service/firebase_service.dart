@@ -25,6 +25,11 @@ class FirebaseService {
   // Add a new ebook to the Firestore collection, checking for duplicates first.
   Future<void> addEbook(EBook ebook) async {
     const serviceName = 'FirebaseService';
+
+    if (ebook.title.trim().isEmpty || ebook.author.trim().isEmpty) {
+      throw Exception("Ebook title and author cannot be empty.");
+    }
+
     try {
       final canUpload = await _uploadLimitService.canUpload();
       if (!canUpload) {

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "948071900622",
-    "project_id": "page-to-play",
-    "storage_bucket": "page-to-play.firebasestorage.app"
+    "project_number": "308638777040",
+    "project_id": "page-to-play-816b3",
+    "storage_bucket": "page-to-play-816b3.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:948071900622:android:7bf62566a15a9fdf87b79f",
+        "mobilesdk_app_id": "1:308638777040:android:8f4428b82a4769e9d6e8d5",
         "android_client_info": {
           "package_name": "com.example.page_to_play"
         }
@@ -15,7 +15,26 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDCbKk1nD7Gdcjn4O6SRXro4Nz5H8GAUqk"
+          "current_key": "AIzaSyAwlnXDrqUFyLyV_mBovbsK_fukL0sZv0U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:308638777040:android:d9ffa02a27ff8baad6e8d5",
+        "android_client_info": {
+          "package_name": "com.ken.page_to_play"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwlnXDrqUFyLyV_mBovbsK_fukL0sZv0U"
         }
       ],
       "services": {

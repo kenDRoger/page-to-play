@@ -32,12 +32,14 @@ class EbookImporterService {
       String rawText = '';
       String ebookTitle = titleFromFile;
       String ebookAuthor = defaultAuthor;
+      bool isEpub = false;
 
       if (extension == 'pdf') {
         log("Processing PDF file...", name: serviceName);
         final List<String> pages = await ReadPdfText.getPDFtextPaginated(path);
         rawText = pages.join('\n\n');
       } else if (extension == 'epub') {
+        isEpub = true;
         log("Processing EPUB file...", name: serviceName);
         final fileBytes = await File(path).readAsBytes();
         final epubBook = await EpubReader.readBook(fileBytes);
@@ -62,10 +64,12 @@ class EbookImporterService {
         return null;
       }
 
-      // Delegate metadata extraction to the processing service.
-      final extractedMeta = TextProcessingService.extractMetadata(rawText);
-      if (extractedMeta.$1 != null) ebookTitle = extractedMeta.$1!;
-      if (extractedMeta.$2 != null) ebookAuthor = extractedMeta.$2!;
+      // Only use text-based metadata extraction as a fallback for non-EPUBs.
+      if (!isEpub) {
+        final extractedMeta = TextProcessingService.extractMetadata(rawText);
+        if (extractedMeta.$1 != null) ebookTitle = extractedMeta.$1!;
+        if (extractedMeta.$2 != null) ebookAuthor = extractedMeta.$2!;
+      }
 
       // The EBook factory is now responsible for calling the text processor.
       final ebook = EBook.fromExtractedText(ebookTitle, ebookAuthor, rawText);

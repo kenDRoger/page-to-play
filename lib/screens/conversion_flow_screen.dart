@@ -112,6 +112,15 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
   Future<void> _saveToFirebase() async {
     if (_ebook == null) return;
 
+    if (_titleController.text.trim().isEmpty) {
+      _showError("Title cannot be empty.");
+      return;
+    }
+    if (_authorController.text.trim().isEmpty) {
+      _showError("Author cannot be empty.");
+      return;
+    }
+
     final editedEbook = EBook(
       title: _titleController.text,
       author: _authorController.text,

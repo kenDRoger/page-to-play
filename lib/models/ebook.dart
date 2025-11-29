@@ -31,9 +31,9 @@ class EBook {
     this.id,
     required this.title,
     required this.author,
-    required this.content,
+    required List<String> content,
     this.status = EbookStatus.awaitingReview,
-  });
+  }) : content = content.where((s) => s.trim().isNotEmpty).toList();
 
   // Convert an EBook object into a map for Firestore.
   Map<String, dynamic> toJson() {
@@ -54,7 +54,7 @@ class EBook {
       author: data['author'] ?? 'Unknown Author',
       content: List<String>.from(data['content'] ?? []),
       status: EbookStatus.values.firstWhere(
-        (e) => e.toString() == data['status'],
+            (e) => e.toString() == data['status'],
         orElse: () => EbookStatus.awaitingReview,
       ),
     );

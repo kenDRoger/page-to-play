@@ -58,8 +58,7 @@ class TextProcessingService {
 
     return paragraph
         .split(sentenceEndRegex)
-        // Additional cleanup to remove artifacts like chapter numbers from the start of sentences.
-        .map((s) => s.trim().replaceAll(RegExp(r'^[IVXLC]+\s*'), '').trim())
+        .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
         .toList();
   }
