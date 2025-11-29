@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:page_to_play/models/ebook.dart';
 import 'package:page_to_play/service/ebook_importer_service.dart';
 import 'package:page_to_play/service/firebase_service.dart';
+import 'package:page_to_play/service/upload_limit_service.dart';
 import 'package:page_to_play/utilities/constants.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -15,15 +16,30 @@ class ConversionFlowScreen extends StatefulWidget {
 class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
   final EbookImporterService _importer = EbookImporterService();
   final FirebaseService _firebaseService = FirebaseService();
+  final UploadLimitService _uploadLimitService = UploadLimitService();
 
   EBook? _ebook;
   bool _isLoading = false;
   String? _error;
   String? _status;
+  int _remainingUploads = 0;
 
   late TextEditingController _titleController;
   late TextEditingController _authorController;
   late List<TextEditingController> _contentControllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateRemainingUploads();
+  }
+
+  Future<void> _updateRemainingUploads() async {
+    final remaining = await _uploadLimitService.getRemainingUploads();
+    setState(() {
+      _remainingUploads = remaining;
+    });
+  }
 
   @override
   void dispose() {
@@ -57,6 +73,12 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
   }
 
   Future<void> _pickFile() async {
+    final canUpload = await _uploadLimitService.canUpload();
+    if (!canUpload) {
+      _showError('You have reached the daily upload limit.');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -107,6 +129,7 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
         _status = "Ebook saved to Firebase successfully!";
         _ebook = null;
       });
+      _updateRemainingUploads();
     } on EbookAlreadyExistsException catch (e) {
       _showError("This book is already in the library: ${e.message}");
     } catch (e) {
@@ -189,6 +212,14 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 20),
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                'Remaining uploads today: $_remainingUploads',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: theme.textTheme.bodySmall?.color),
+              ),
+            ),
             if (_status != null)
               Padding(
                 padding: const EdgeInsets.only(top: 20.0),
@@ -200,10 +231,14 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
               ),
             const SizedBox(height: 60),
             Text("Don't have an ebook?",
-                textAlign: TextAlign.center, style: kSubheadingTextStyle.apply(color: theme.textTheme.titleLarge?.color)),
+                textAlign: TextAlign.center,
+                style: kSubheadingTextStyle.apply(
+                    color: theme.textTheme.titleLarge?.color)),
             const SizedBox(height: 10),
             Text("Download one from these sites:",
-                textAlign: TextAlign.center, style: kBodyTextStyle.apply(color: theme.textTheme.bodyMedium?.color)),
+                textAlign: TextAlign.center,
+                style: kBodyTextStyle.apply(
+                    color: theme.textTheme.bodyMedium?.color)),
             const SizedBox(height: 20),
             ...kEbookSites.entries.map((entry) {
               return TextButton(
@@ -231,22 +266,25 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
                 decoration: kTextFieldInputDecoration.copyWith(
                   labelText: 'Title',
                   fillColor: theme.inputDecorationTheme.fillColor,
-                  labelStyle: TextStyle(color: theme.inputDecorationTheme.hintStyle?.color),
+                  labelStyle:
+                      TextStyle(color: theme.inputDecorationTheme.hintStyle?.color),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _authorController,
-                 style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                 decoration: kTextFieldInputDecoration.copyWith(
                   labelText: 'Author',
                   fillColor: theme.inputDecorationTheme.fillColor,
-                  labelStyle: TextStyle(color: theme.inputDecorationTheme.hintStyle?.color),
+                  labelStyle:
+                      TextStyle(color: theme.inputDecorationTheme.hintStyle?.color),
                 ),
               ),
               const SizedBox(height: 24),
               Text('Content Preview:',
-                  style: kSubheadingTextStyle.apply(color: theme.textTheme.titleLarge?.color)),
+                  style: kSubheadingTextStyle.apply(
+                      color: theme.textTheme.titleLarge?.color)),
             ]),
           ),
         ),
@@ -254,15 +292,17 @@ class _ConversionFlowScreenState extends State<ConversionFlowScreen> {
           delegate: SliverChildBuilderDelegate(
             (context, index) {
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: TextField(
                   controller: _contentControllers[index],
                   maxLines: null,
-                   style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+                  style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                   decoration: kTextFieldInputDecoration.copyWith(
                     labelText: 'Sentence ${index + 1}',
                     fillColor: theme.inputDecorationTheme.fillColor,
-                    labelStyle: TextStyle(color: theme.inputDecorationTheme.hintStyle?.color),
+                    labelStyle: TextStyle(
+                        color: theme.inputDecorationTheme.hintStyle?.color),
                   ),
                 ),
               );

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:page_to_play/models/ebook.dart';
 import 'package:page_to_play/service/local_user_service.dart';
 import 'package:page_to_play/service/playlist_service.dart';
+import 'package:page_to_play/service/upload_limit_service.dart';
 
 // Custom exception for handling duplicate ebook entries.
 class EbookAlreadyExistsException implements Exception {
@@ -18,12 +19,18 @@ class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final LocalUserService _localUserService = LocalUserService();
   final PlaylistService _playlistService = PlaylistService();
+  final UploadLimitService _uploadLimitService = UploadLimitService();
   final String _collectionPath = 'books';
 
   // Add a new ebook to the Firestore collection, checking for duplicates first.
   Future<void> addEbook(EBook ebook) async {
     const serviceName = 'FirebaseService';
     try {
+      final canUpload = await _uploadLimitService.canUpload();
+      if (!canUpload) {
+        throw Exception('You have reached the daily upload limit.');
+      }
+
       // Query for books with the same title and author.
       final querySnapshot = await _firestore
           .collection(_collectionPath)
@@ -42,6 +49,7 @@ class FirebaseService {
       // If no duplicates are found, add the new ebook.
       final docRef = await _firestore.collection(_collectionPath).add(ebook.toJson());
       await _localUserService.addUploadedEbookId(docRef.id);
+      await _uploadLimitService.incrementUploadCount();
       log('Successfully added ebook: ${ebook.title}', name: serviceName);
     } catch (e, s) {
       // Re-throw our custom exception directly.
