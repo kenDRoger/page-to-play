@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:page_to_play/models/ebook.dart';
 import 'package:page_to_play/models/playlist.dart';
 import 'package:page_to_play/screens/audiobook_player_screen.dart';
@@ -239,8 +238,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                           );
                         }
                       },
-                    ),
-                  );
+                    ),                  );
                 },
               );
             },
@@ -342,45 +340,90 @@ class _LibraryScreenState extends State<LibraryScreen>
         }
 
         final playlists = snapshot.data!;
+        final theme = Theme.of(context);
 
         return ListView.builder(
+          padding: const EdgeInsets.all(8.0),
           itemCount: playlists.length,
           itemBuilder: (context, index) {
             final playlist = playlists[index];
-            return ListTile(
-              title: Text(playlist.name),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(playlist.description),
-                  Text('${playlist.ebookIds.length} books'),
-                ],
+            return Card(
+              elevation: 2,
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              trailing: playlist.ebookIds.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.play_arrow),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AudiobookPlayerScreen(
-                              ebookId: playlist.ebookIds.first,
-                              playlist: playlist,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          PlaylistDetailsScreen(playlist: playlist),
+                    ),
+                  ).then((_) => setState(() {}));
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.secondary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.queue_music,
+                          color: theme.colorScheme.secondary,
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              playlist.name,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        );
-                      },
-                    )
-                  : null,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        PlaylistDetailsScreen(playlist: playlist),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${playlist.ebookIds.length} books',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.textTheme.bodyMedium?.color
+                                    ?.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (playlist.ebookIds.isNotEmpty)
+                        IconButton(
+                          icon: Icon(Icons.play_circle_fill,
+                              color: theme.colorScheme.secondary, size: 36),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AudiobookPlayerScreen(
+                                  ebookId: playlist.ebookIds.first,
+                                  playlist: playlist,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                    ],
                   ),
-                ).then((_) => setState(() {}));
-              },
+                ),
+              ),
             );
           },
         );

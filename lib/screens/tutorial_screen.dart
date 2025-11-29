@@ -15,21 +15,33 @@ class _TutorialScreenState extends State<TutorialScreen> {
   final List<Map<String, String>> _tutorialData = [
     {
       'image': 'assets/step1.png',
-      'title': 'Import a Book',
+      'title': 'Import Your Ebooks',
       'content':
-          'Tap the + button on the library screen to import a book from your device.',
+          'Tap the "+" button in your library to import ebooks from your device. You can upload up to 5 books per day.',
     },
     {
       'image': 'assets/step2.png',
-      'title': 'Convert to Audiobook',
+      'title': 'From Text to Speech',
       'content':
-          'Follow the steps to convert your ebook into an audiobook. You can review the text and configure the audio before processing.',
+          'After importing, you can review and edit the extracted text before it\'s converted into an audiobook.',
     },
     {
       'image': 'assets/step3.png',
-      'title': 'Listen Anytime, Anywhere',
+      'title': 'Organize with Playlists',
       'content':
-          'Once processed, your audiobook will be ready to play. Enjoy your book in a whole new way!',
+          'Group your audiobooks into playlists from the "Playlists" tab. You can add books from the library or even while you\'re listening.',
+    },
+    {
+      'image': 'assets/step4.png',
+      'title': 'Seamless Listening',
+      'content':
+          'Play books individually or as a playlist. The player automatically proceeds to the next book and even skips any that are missing.',
+    },
+    {
+      'image': 'assets/step5.png',
+      'title': 'Customize Your App',
+      'content':
+          'Visit Settings to switch between light and dark themes or to adjust the TTS voice and playback speed.',
     },
   ];
 

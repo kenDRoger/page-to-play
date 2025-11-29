@@ -21,7 +21,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
   late Future<EBook> _ebookFuture;
   late String _currentEbookId;
   late Playlist? _playlist;
-  bool _shouldAutoPlayNext = false;
+  bool _shouldAutoPlay = false;
   bool _isHandlingMissingBook = false;
 
   final PlaylistService _playlistService = PlaylistService();
@@ -41,6 +41,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
     _playlist = widget.playlist;
     _ebookFuture = FirebaseService().getEbook(_currentEbookId);
     _itemPositionsListener.itemPositions.addListener(_onScroll);
+    _shouldAutoPlay = true;
   }
 
   Future<void> _handleMissingEbookInPlaylist(String missingEbookId) async {
@@ -78,7 +79,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       _ebookFuture = FirebaseService().getEbook(_currentEbookId);
       _sentences = [];
       _currentSentenceIndex = 0;
-      _shouldAutoPlayNext = true;
+      _shouldAutoPlay = true;
       _isHandlingMissingBook = false;
     });
   }
@@ -126,7 +127,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
         _ebookFuture = FirebaseService().getEbook(_currentEbookId);
         _sentences = [];
         _currentSentenceIndex = 0;
-        _shouldAutoPlayNext = true;
+        _shouldAutoPlay = true;
         _ttsService.stop();
       });
     }
@@ -142,7 +143,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
         _ebookFuture = FirebaseService().getEbook(_currentEbookId);
         _sentences = [];
         _currentSentenceIndex = 0;
-        _shouldAutoPlayNext = true;
+        _shouldAutoPlay = true;
         _ttsService.stop();
       });
     }
@@ -203,6 +204,46 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
     super.dispose();
   }
 
+  Widget _buildAddToPlaylistButton() {
+    return FutureBuilder<List<Playlist>>(
+      future: _playlistService.getPlaylists(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final availablePlaylists = snapshot.data!
+            .where((playlist) => !playlist.ebookIds.contains(_currentEbookId))
+            .toList();
+
+        if (availablePlaylists.isEmpty) {
+          return const IconButton(
+            icon: Icon(Icons.playlist_add),
+            onPressed: null,
+          );
+        }
+
+        return PopupMenuButton<String>(
+          icon: const Icon(Icons.playlist_add),
+          onSelected: (String playlistName) {
+            _playlistService.addEbookToPlaylist(playlistName, _currentEbookId);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Added to $playlistName')),
+            );
+          },
+          itemBuilder: (BuildContext context) {
+            return availablePlaylists
+                .map((playlist) => PopupMenuItem<String>(
+                      value: playlist.name,
+                      child: Text(playlist.name),
+                    ))
+                .toList();
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -211,6 +252,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       appBar: AppBar(
         title: const Text('Audiobook Player'),
         actions: [
+          _buildAddToPlaylistButton(),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
@@ -264,8 +306,8 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
             _sentences = ebook.content;
           }
 
-          if (_shouldAutoPlayNext) {
-            _shouldAutoPlayNext = false;
+          if (_shouldAutoPlay) {
+            _shouldAutoPlay = false;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 _playSequence();
