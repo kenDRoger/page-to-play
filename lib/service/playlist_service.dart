@@ -63,4 +63,12 @@ class PlaylistService {
     playlist.ebookIds.remove(ebookId);
     await savePlaylists(playlists);
   }
+
+  Future<void> removeEbookFromAllPlaylists(String ebookId) async {
+    final playlists = await getPlaylists();
+    for (var playlist in playlists) {
+      playlist.ebookIds.remove(ebookId);
+    }
+    await savePlaylists(playlists);
+  }
 }

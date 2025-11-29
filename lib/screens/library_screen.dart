@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:page_to_play/models/ebook.dart';
 import 'package:page_to_play/models/playlist.dart';
 import 'package:page_to_play/screens/audiobook_player_screen.dart';
 import 'package:page_to_play/screens/playlist_details_screen.dart';
 import 'package:page_to_play/service/firebase_service.dart';
+import 'package:page_to_play/service/local_user_service.dart';
 import 'package:page_to_play/service/playlist_service.dart';
 import 'package:page_to_play/utilities/constants.dart';
 
@@ -19,6 +21,8 @@ class _LibraryScreenState extends State<LibraryScreen>
   String _searchQuery = '';
   late TabController _tabController;
   final PlaylistService _playlistService = PlaylistService();
+  final FirebaseService _firebaseService = FirebaseService();
+  final LocalUserService _localUserService = LocalUserService();
 
   @override
   void initState() {
@@ -138,7 +142,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         ),
         Expanded(
           child: StreamBuilder<List<EBook>>(
-            stream: FirebaseService().getEbooks(),
+            stream: _firebaseService.getEbooks(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -218,7 +222,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                           ),
                         ],
                       ),
-                      trailing: _buildAddToPlaylistButton(ebook),
+                      trailing: _buildEbookOptionsMenu(ebook),
                       onTap: () {
                         if (ebook.id != null) {
                           Navigator.push(
@@ -246,35 +250,77 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  Widget _buildAddToPlaylistButton(EBook ebook) {
-    return FutureBuilder<List<Playlist>>(
-        future: _playlistService.getPlaylists(),
+  Widget _buildEbookOptionsMenu(EBook ebook) {
+    return FutureBuilder<List<dynamic>>(
+        future: Future.wait([
+          _playlistService.getPlaylists(),
+          _localUserService.getUploadedEbookIds(),
+        ]),
         builder: (context, snapshot) {
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          if (!snapshot.hasData) {
             return const SizedBox.shrink();
           }
+
+          final playlists = snapshot.data![0] as List<Playlist>;
+          final uploadedEbookIds = snapshot.data![1] as List<String>;
+          final isOwner = uploadedEbookIds.contains(ebook.id);
+
           return PopupMenuButton<String>(
-            onSelected: (String playlistName) {
-              if (ebook.id != null) {
-                _playlistService.addEbookToPlaylist(playlistName, ebook.id!);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Added to $playlistName')),
+            onSelected: (String value) async {
+              if (value == 'delete') {
+                final confirm = await showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Ebook'),
+                    content: const Text(
+                        'Are you sure you want to delete this ebook?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
                 );
+                if (confirm == true) {
+                  await _firebaseService.deleteEbook(ebook.id!);
+                  setState(() {});
+                }
+              } else {
+                // Add to playlist
+                if (ebook.id != null) {
+                  _playlistService.addEbookToPlaylist(value, ebook.id!);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Added to $value')),
+                  );
+                }
               }
             },
             itemBuilder: (BuildContext context) {
+              final playlistItems = playlists.map((playlist) {
+                return PopupMenuItem<String>(
+                  value: playlist.name,
+                  child: Text(playlist.name),
+                );
+              }).toList();
+
               return [
                 const PopupMenuItem<String>(
                   enabled: false,
                   child: Text('Add to Playlist'),
                 ),
                 const PopupMenuDivider(),
-                ...snapshot.data!.map((playlist) {
-                  return PopupMenuItem<String>(
-                    value: playlist.name,
-                    child: Text(playlist.name),
-                  );
-                })
+                ...playlistItems,
+                if (isOwner) const PopupMenuDivider(),
+                if (isOwner)
+                  const PopupMenuItem<String>(
+                    value: 'delete',
+                    child: Text('Delete', style: TextStyle(color: Colors.red)),
+                  ),
               ];
             },
           );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:page_to_play/models/ebook.dart';
 import 'package:page_to_play/models/playlist.dart';
 import 'package:page_to_play/service/firebase_service.dart';
+import 'package:page_to_play/service/playlist_service.dart';
 import 'package:page_to_play/service/tts_service.dart';
 import 'package:page_to_play/utilities/constants.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -21,6 +22,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
   late String _currentEbookId;
   late Playlist? _playlist;
   bool _shouldAutoPlayNext = false;
+  bool _isHandlingMissingBook = false;
+
+  final PlaylistService _playlistService = PlaylistService();
 
   int _currentSentenceIndex = 0;
   List<String> _sentences = [];
@@ -37,6 +41,46 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
     _playlist = widget.playlist;
     _ebookFuture = FirebaseService().getEbook(_currentEbookId);
     _itemPositionsListener.itemPositions.addListener(_onScroll);
+  }
+
+  Future<void> _handleMissingEbookInPlaylist(String missingEbookId) async {
+    if (_playlist == null || !mounted) return;
+
+    final missingBookIndex = _playlist!.ebookIds.indexOf(missingEbookId);
+
+    await _playlistService.removeEbookFromPlaylist(
+        _playlist!.name, missingEbookId);
+    _playlist!.ebookIds.remove(missingEbookId);
+
+    if (!mounted) return;
+
+    if (_playlist!.ebookIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Ebook not found, playlist is now empty.")),
+      );
+      Navigator.of(context).pop();
+      return;
+    }
+
+    int nextIndex = missingBookIndex;
+    if (nextIndex >= _playlist!.ebookIds.length) {
+      nextIndex = _playlist!.ebookIds.length - 1;
+    }
+
+    final nextEbookId = _playlist!.ebookIds[nextIndex];
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Skipping missing ebook...")),
+    );
+
+    setState(() {
+      _currentEbookId = nextEbookId;
+      _ebookFuture = FirebaseService().getEbook(_currentEbookId);
+      _sentences = [];
+      _currentSentenceIndex = 0;
+      _shouldAutoPlayNext = true;
+      _isHandlingMissingBook = false;
+    });
   }
 
   void _onScroll() {
@@ -105,7 +149,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
   }
 
   void _playSequence() async {
-    if (_sentences.isEmpty) return;
+    if (_sentences.isEmpty || _isHandlingMissingBook) return;
 
     setState(() {
       _ttsService.isPlaying = true;
@@ -124,7 +168,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       if (_currentSentenceIndex < _sentences.length - 1) {
         _currentSentenceIndex++;
       } else {
-        _ttsService.isPlaying = false; // for UI and to stop loop
+        _ttsService.isPlaying = false;
 
         if (_playlist != null) {
           final currentIndex = _playlist!.ebookIds.indexOf(_currentEbookId);
@@ -134,7 +178,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
           }
         }
 
-        setState(() {}); // For UI update to show play button again
+        setState(() {});
       }
     }
   }
@@ -188,13 +232,33 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: Text('Ebook not found.'));
+
+          if (snapshot.hasError ||
+              (snapshot.connectionState == ConnectionState.done &&
+                  !snapshot.hasData)) {
+            if (_playlist != null) {
+              if (!_isHandlingMissingBook) {
+                _isHandlingMissingBook = true;
+                Future.microtask(
+                    () => _handleMissingEbookInPlaylist(_currentEbookId));
+              }
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text("Resolving playlist..."),
+                  ],
+                ),
+              );
+            } else {
+              return Center(
+                  child: Text("Error: Ebook not found. ${snapshot.error}"));
+            }
           }
 
+          _isHandlingMissingBook = false;
           final ebook = snapshot.data!;
           if (_sentences.isEmpty) {
             _sentences = ebook.content;

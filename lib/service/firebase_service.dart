@@ -1,8 +1,9 @@
-
 import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:page_to_play/models/ebook.dart';
+import 'package:page_to_play/service/local_user_service.dart';
+import 'package:page_to_play/service/playlist_service.dart';
 
 // Custom exception for handling duplicate ebook entries.
 class EbookAlreadyExistsException implements Exception {
@@ -15,6 +16,8 @@ class EbookAlreadyExistsException implements Exception {
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final LocalUserService _localUserService = LocalUserService();
+  final PlaylistService _playlistService = PlaylistService();
   final String _collectionPath = 'books';
 
   // Add a new ebook to the Firestore collection, checking for duplicates first.
@@ -37,16 +40,17 @@ class FirebaseService {
       }
 
       // If no duplicates are found, add the new ebook.
-      await _firestore.collection(_collectionPath).add(ebook.toJson());
+      final docRef = await _firestore.collection(_collectionPath).add(ebook.toJson());
+      await _localUserService.addUploadedEbookId(docRef.id);
       log('Successfully added ebook: ${ebook.title}', name: serviceName);
-
     } catch (e, s) {
       // Re-throw our custom exception directly.
       if (e is EbookAlreadyExistsException) {
         rethrow;
       }
       // Log other errors and re-throw them to be handled by the UI.
-      log("Error adding ebook to Firebase", name: serviceName, error: e, stackTrace: s);
+      log("Error adding ebook to Firebase",
+          name: serviceName, error: e, stackTrace: s);
       rethrow;
     }
   }
@@ -74,5 +78,12 @@ class FirebaseService {
         .where(FieldPath.documentId, whereIn: ids)
         .get();
     return querySnapshot.docs.map((doc) => EBook.fromSnapshot(doc)).toList();
+  }
+
+  // Delete an ebook by its ID.
+  Future<void> deleteEbook(String id) async {
+    await _firestore.collection(_collectionPath).doc(id).delete();
+    await _localUserService.removeUploadedEbookId(id);
+    await _playlistService.removeEbookFromAllPlaylists(id);
   }
 }
