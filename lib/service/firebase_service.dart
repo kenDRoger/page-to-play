@@ -63,4 +63,16 @@ class FirebaseService {
       return snapshot.docs.map((doc) => EBook.fromSnapshot(doc)).toList();
     });
   }
+
+  // Fetch a list of ebooks by their IDs.
+  Future<List<EBook>> getEbooksByIds(List<String> ids) async {
+    if (ids.isEmpty) {
+      return [];
+    }
+    final querySnapshot = await _firestore
+        .collection(_collectionPath)
+        .where(FieldPath.documentId, whereIn: ids)
+        .get();
+    return querySnapshot.docs.map((doc) => EBook.fromSnapshot(doc)).toList();
+  }
 }

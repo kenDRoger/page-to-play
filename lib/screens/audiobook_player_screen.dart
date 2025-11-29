@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:page_to_play/models/ebook.dart';
+import 'package:page_to_play/models/playlist.dart';
 import 'package:page_to_play/service/firebase_service.dart';
 import 'package:page_to_play/service/tts_service.dart';
 import 'package:page_to_play/utilities/constants.dart';
@@ -7,7 +8,9 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class AudiobookPlayerScreen extends StatefulWidget {
   final String ebookId;
-  const AudiobookPlayerScreen({super.key, required this.ebookId});
+  final Playlist? playlist;
+
+  const AudiobookPlayerScreen({super.key, required this.ebookId, this.playlist});
 
   @override
   State<AudiobookPlayerScreen> createState() => _AudiobookPlayerScreenState();
@@ -15,17 +18,24 @@ class AudiobookPlayerScreen extends StatefulWidget {
 
 class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
   late Future<EBook> _ebookFuture;
+  late String _currentEbookId;
+  late Playlist? _playlist;
+  bool _shouldAutoPlayNext = false;
+
   int _currentSentenceIndex = 0;
   List<String> _sentences = [];
   final ItemScrollController _itemScrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
   TtsService _ttsService = TtsService();
   bool _isManuallyScrolling = false;
 
   @override
   void initState() {
     super.initState();
-    _ebookFuture = FirebaseService().getEbook(widget.ebookId);
+    _currentEbookId = widget.ebookId;
+    _playlist = widget.playlist;
+    _ebookFuture = FirebaseService().getEbook(_currentEbookId);
     _itemPositionsListener.itemPositions.addListener(_onScroll);
   }
 
@@ -44,7 +54,8 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       double minDifference = double.infinity;
 
       for (var position in positions) {
-        final itemCenter = (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
+        final itemCenter =
+            (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
         final difference = (itemCenter - viewportCenter).abs();
 
         if (difference < minDifference) {
@@ -61,6 +72,38 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
     }
   }
 
+  void _playNextBookInPlaylist() {
+    if (_playlist == null) return;
+    final currentIndex = _playlist!.ebookIds.indexOf(_currentEbookId);
+    if (currentIndex < _playlist!.ebookIds.length - 1) {
+      final nextEbookId = _playlist!.ebookIds[currentIndex + 1];
+      setState(() {
+        _currentEbookId = nextEbookId;
+        _ebookFuture = FirebaseService().getEbook(_currentEbookId);
+        _sentences = [];
+        _currentSentenceIndex = 0;
+        _shouldAutoPlayNext = true;
+        _ttsService.stop();
+      });
+    }
+  }
+
+  void _playPreviousBookInPlaylist() {
+    if (_playlist == null) return;
+    final currentIndex = _playlist!.ebookIds.indexOf(_currentEbookId);
+    if (currentIndex > 0) {
+      final prevEbookId = _playlist!.ebookIds[currentIndex - 1];
+      setState(() {
+        _currentEbookId = prevEbookId;
+        _ebookFuture = FirebaseService().getEbook(_currentEbookId);
+        _sentences = [];
+        _currentSentenceIndex = 0;
+        _shouldAutoPlayNext = true;
+        _ttsService.stop();
+      });
+    }
+  }
+
   void _playSequence() async {
     if (_sentences.isEmpty) return;
 
@@ -74,12 +117,24 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
 
       await _ttsService.speak(_sentences[_currentSentenceIndex]);
 
-      if (_ttsService.isPlaying && _currentSentenceIndex < _sentences.length - 1) {
+      if (!_ttsService.isPlaying) {
+        break;
+      }
+
+      if (_currentSentenceIndex < _sentences.length - 1) {
         _currentSentenceIndex++;
       } else {
-        setState(() {
-          _ttsService.isPlaying = false;
-        });
+        _ttsService.isPlaying = false; // for UI and to stop loop
+
+        if (_playlist != null) {
+          final currentIndex = _playlist!.ebookIds.indexOf(_currentEbookId);
+          if (currentIndex < _playlist!.ebookIds.length - 1) {
+            _playNextBookInPlaylist();
+            break;
+          }
+        }
+
+        setState(() {}); // For UI update to show play button again
       }
     }
   }
@@ -145,12 +200,22 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
             _sentences = ebook.content;
           }
 
+          if (_shouldAutoPlayNext) {
+            _shouldAutoPlayNext = false;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _playSequence();
+              }
+            });
+          }
+
           return Column(
             children: [
               Expanded(
                 child: LayoutBuilder(
                   builder: (BuildContext context, BoxConstraints constraints) {
-                    final double verticalPadding = (constraints.maxHeight / 2.5);
+                    final double verticalPadding =
+                        (constraints.maxHeight / 2.5);
 
                     return NotificationListener<ScrollNotification>(
                       onNotification: (notification) {
@@ -158,14 +223,16 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                             notification.dragDetails != null) {
                           _isManuallyScrolling = true;
                         } else if (notification is ScrollEndNotification) {
-                          Future.delayed(const Duration(milliseconds: 200), () {
+                          Future.delayed(const Duration(milliseconds: 200),
+                              () {
                             _isManuallyScrolling = false;
                           });
                         }
                         return false;
                       },
                       child: ScrollablePositionedList.builder(
-                        padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                        padding:
+                            EdgeInsets.symmetric(vertical: verticalPadding),
                         itemCount: _sentences.length,
                         itemScrollController: _itemScrollController,
                         itemPositionsListener: _itemPositionsListener,
@@ -181,8 +248,11 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
                               _sentences[index],
                               textAlign: TextAlign.center,
                               style: isSelected
-                                  ? kPlayerContentSelectedTextStyle.apply(color: theme.textTheme.bodyLarge?.color)
-                                  : kPlayerContentTextStyle.apply(color: theme.textTheme.bodyMedium?.color),
+                                  ? kPlayerContentSelectedTextStyle.apply(
+                                      color:
+                                          theme.textTheme.bodyLarge?.color)
+                                  : kPlayerContentTextStyle.apply(
+                                      color: theme.textTheme.bodyMedium?.color),
                             ),
                           );
                         },
@@ -200,6 +270,19 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
   }
 
   Widget _buildPlayerControls(EBook ebook, ThemeData theme) {
+    final bool hasPlaylist = _playlist != null;
+    int? currentIndexInPlaylist;
+    if (hasPlaylist) {
+      currentIndexInPlaylist = _playlist!.ebookIds.indexOf(_currentEbookId);
+    }
+
+    final bool canGoPrevious = hasPlaylist &&
+        currentIndexInPlaylist != null &&
+        currentIndexInPlaylist > 0;
+    final bool canGoNext = hasPlaylist &&
+        currentIndexInPlaylist != null &&
+        currentIndexInPlaylist < _playlist!.ebookIds.length - 1;
+
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -219,9 +302,15 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(ebook.title, style: kPlayerTitleTextStyle.apply(color: theme.textTheme.titleLarge?.color), textAlign: TextAlign.center),
+          Text(ebook.title,
+              style: kPlayerTitleTextStyle.apply(
+                  color: theme.textTheme.titleLarge?.color),
+              textAlign: TextAlign.center),
           const SizedBox(height: 4),
-          Text(ebook.author, style: kPlayerAuthorTextStyle.apply(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)), textAlign: TextAlign.center),
+          Text(ebook.author,
+              style: kPlayerAuthorTextStyle.apply(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)),
+              textAlign: TextAlign.center),
           const SizedBox(height: 10),
           Slider(
             value: _sentences.isNotEmpty
@@ -243,19 +332,17 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.skip_previous, size: kPlayerControlIconSize),
-                onPressed: () {
-                  if (_currentSentenceIndex > 0) {
-                    setState(() {
-                      _currentSentenceIndex--;
-                    });
-                    _scrollToIndex(_currentSentenceIndex, isManual: false);
-                  }
-                },
+                icon: const Icon(Icons.skip_previous,
+                    size: kPlayerControlIconSize),
+                onPressed:
+                    canGoPrevious ? _playPreviousBookInPlaylist : null,
               ),
               const SizedBox(width: 20),
               IconButton(
-                icon: Icon(_ttsService.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                icon: Icon(
+                    _ttsService.isPlaying
+                        ? Icons.pause_circle_filled
+                        : Icons.play_circle_filled,
                     size: kPlayerMainControlIconSize),
                 onPressed: () {
                   if (_ttsService.isPlaying) {
@@ -269,14 +356,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> {
               const SizedBox(width: 20),
               IconButton(
                 icon: const Icon(Icons.skip_next, size: kPlayerControlIconSize),
-                onPressed: () {
-                  if (_currentSentenceIndex < _sentences.length - 1) {
-                    setState(() {
-                      _currentSentenceIndex++;
-                    });
-                    _scrollToIndex(_currentSentenceIndex, isManual: false);
-                  }
-                },
+                onPressed: canGoNext ? _playNextBookInPlaylist : null,
               ),
             ],
           ),
